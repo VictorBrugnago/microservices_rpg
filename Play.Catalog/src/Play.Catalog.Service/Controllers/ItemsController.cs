@@ -1,5 +1,4 @@
 using Microsoft.AspNetCore.Mvc;
-using Play.Catalog.Service.Dtos;
 using Play.Catalog.Service.Entities;
 using Play.Catalog.Service.Repositories;
 
@@ -9,12 +8,17 @@ namespace Play.Catalog.Service.Controllers;
 [Route("items")]
 public class ItemsController : ControllerBase
 {
-    private readonly ItemsRepository _itemRepository = new();
+    private readonly IItemsRepository itemRepository;
+
+    public ItemsController(IItemsRepository itemRepository)
+    {
+        this.itemRepository = itemRepository;
+    }
 
     [HttpGet]
     public async Task<IEnumerable<ItemDto>> GetAsync()
     {
-        var items = (await _itemRepository.GetAllAsync())
+        var items = (await itemRepository.GetAllAsync())
             .Select(item => item.AsDto());
         return items;
     }
@@ -22,7 +26,7 @@ public class ItemsController : ControllerBase
     [HttpGet("{id:guid}")]
     public async Task<ActionResult<ItemDto>> GetByIdAsync(Guid id)
     {
-        var item = await _itemRepository.GetAsync(id);
+        var item = await itemRepository.GetAsync(id);
 
         if (item == null) return NotFound();
         return item.AsDto();
@@ -39,7 +43,7 @@ public class ItemsController : ControllerBase
             CreatedDate = DateTimeOffset.UtcNow
         };
 
-        await _itemRepository.CreateAsync(item);
+        await itemRepository.CreateAsync(item);
         
         return CreatedAtAction(nameof(GetByIdAsync), new { id = item.Id }, item);
     }
@@ -47,7 +51,7 @@ public class ItemsController : ControllerBase
     [HttpPut("{id:guid}")]
     public async Task<IActionResult> PutAsync(Guid id, UpdateItemDto updateItemDto)
     {
-        var existingItem = await _itemRepository.GetAsync(id);
+        var existingItem = await itemRepository.GetAsync(id);
 
         if (existingItem == null) return NotFound();
 
@@ -55,7 +59,7 @@ public class ItemsController : ControllerBase
         existingItem.Description = updateItemDto.Description;
         existingItem.Price = updateItemDto.Price;
 
-        await _itemRepository.UpdateAsync(existingItem);
+        await itemRepository.UpdateAsync(existingItem);
 
         return NoContent();
     }
@@ -63,10 +67,10 @@ public class ItemsController : ControllerBase
     [HttpDelete("{id:guid}")]
     public async Task<IActionResult> Delete(Guid id)
     {
-        var item = await _itemRepository.GetAsync(id);
+        var item = await itemRepository.GetAsync(id);
 
         if (item == null) return NotFound();
-        await _itemRepository.RemoveAsync(item.Id);
+        await itemRepository.RemoveAsync(item.Id);
         
         return NoContent();
     }
